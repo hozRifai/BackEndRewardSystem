@@ -1,75 +1,70 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import User
 from django.core.validators import (
     RegexValidator,
     MinValueValidator,
     MaxValueValidator
-    )
+)
 from django.db import models
-from .managers import UserManager
 
+
+from django.contrib.auth.models import User
 
 NAME_REGEX = '^[a-zA-Z ]*$'
 
 GENDER_CHOICE = (
     ("Male", "Male"),
     ("Female", "Female"),
-    )
+)
 
 
-class User(AbstractUser):
-    first_name = None
-    last_name = None
-    username = models.CharField(max_length=256, unique=True)
+class Customer(models.Model):
+    username = models.OneToOneField(User, to_field="username", on_delete=models.CASCADE,)
+    email = models.EmailField(unique=True)
     account_no = models.PositiveIntegerField(
         unique=True,
         validators=[
             MinValueValidator(10000000),
             MaxValueValidator(99999999)
-            ], null=True
-        )
+        ], null=True
+    )
 
-    full_name = models.CharField(
-        max_length=256,
-        blank=False,
-        validators=[
-                RegexValidator(
-                    regex=NAME_REGEX,
-                    message='Name must be Alphabetic',
-                    code='invalid_full_name'
-                    )
-                ]
-        )
-
+    full_name = models.CharField(max_length=256, blank=False,)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICE)
     birth_date = models.DateField(null=True, blank=True)
-    email = models.EmailField(unique=True, blank=False)
     contact_no = models.IntegerField(unique=True, null=True)
     Address = models.CharField(max_length=512)
     city = models.CharField(max_length=256)
     country = models.CharField(max_length=256)
     nationality = models.CharField(max_length=256)
     occupation = models.CharField(max_length=256)
-    balance = models.DecimalField(
-        default=0,
-        max_digits=12,
-        decimal_places=2
-        )
+    balance = models.PositiveIntegerField(
+        default=0, null=True
+    )
+
     picture = models.ImageField(
         null=True,
         blank=True,
         height_field="height_field",
         width_field="width_field",
-        )
+    )
 
     height_field = models.IntegerField(default=600, null=True)
     width_field = models.IntegerField(default=600, null=True)
 
-    objects = UserManager()
-    # use email to log in
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []  # required when user is created
+    def __str__(self):
+        return str("user: {0} | {1}".format(self.username, self.account_no))
+
+
+class Goals(models.Model):
+    usernameOfGoal = models.ForeignKey(
+        Customer, to_field="account_no", on_delete=models.CASCADE, related_name="username_goalss")
+    description = models.CharField(max_length=256)
+    amount = models.IntegerField(default=0, null=True)
+    startDate = models.DateField(null=True, blank=True)
+    endDate = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return str( self.account_no) + str( " => " + self.full_name)
+        return str("you are aiming to safe{0} by the end of {1} day".format(self.amount, self.endDate))
